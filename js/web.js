@@ -1,5 +1,5 @@
 var handler = function(req, res) {
-	fs.readFile('./page.html', function (err, data) {
+	fs.readFile('../page.html', function (err, data) {
 	    if(err) throw err;
 	    res.writeHead(200);
 		res.end(data);
@@ -12,6 +12,11 @@ var Moniker = require('moniker');
 var port = 8080;
 
 app.listen(port);
+
+io.configure(function () { 
+  io.set("transports", ["xhr-polling"]); 
+  io.set("polling duration", 10); 
+});
 
 // socket.io
 io.sockets.on('connection', function (socket) {
