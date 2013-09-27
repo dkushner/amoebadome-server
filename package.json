@@ -1,10 +1,13 @@
 {
-    "name": "SocketioExample",
+    "name": "amoebadome-server",
     "version": "0.0.1",
-    "description": "SocketioExample",
+    "private": true,
     "dependencies": {
-        "socket.io": "latest",
-        "moniker": "latest"
+      "express": "~2.5.8",
+      "ejs": "~0.7.1",
+      "socket.io": "~0.9.6"
     },
-    "author": "dev"
+    "engines": {
+    "node": "0.6.x"
+  }
 }
