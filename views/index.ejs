@@ -1,2 +1,184 @@
-<div id="status"></div>
-<button id="reset">Reset!</button>
+<!doctype html>
+<html>
+	<head>
+		<title>learningthree.js boiler plate for three.js</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		
+    <script src="../public/vendor/Prototype.js"></script>
+    <script src="../public/vendor/jQuery.js"></script>
+    <script src="../public/vendor/cannon/Cannon.js"></script>
+    <script src="../public/vendor/three/Three.js"></script>
+		<script src="../public/vendor/three/Detector.js"></script>
+		<!-- https://github.com/mrdoob/stats.js -->
+		<script src="../public/vendor/three/Stats.js"></script>
+		<script src="../public/vendor/threex/THREEx.WindowResize.js"></script>
+    <script src="../public/vendor/threex/THREEx.KeyboardState.js"></script>
+    <script src="../public/vendor/EventEmitter.js"></script>
+    <script src="../public/vendor/Underscore.js"></script>
+    <script src="../public/vendor/dat.gui.min.js"></script>
+    <script src="../public/js/physics.js"></script>
+    <script src="../public/js/input.js"></script>
+    <script src="../public/js/game.js"></script>
+    <script src="../public/js/component.js"></script>
+    <script src="../public/js/entity.js"></script>
+    <script src="../public/js/prefab.js"></script>
+    <script src="../public/js/components/controller.js"></script>
+    <script src="../public/js/components/rigidbody.js"></script>
+    <script src="../public/js/components/follow.js"></script>
+    <script src="../public/js/components/interface.js"></script>
+
+		<link  href="css/main.css" rel="stylesheet"/>
+	</head>
+<body>
+  <div id="amoeba"></div>
+	<script type="text/javascript">
+    var Amoeba = new Game({
+      canvas: '#amoeba',
+      width: window.innerWidth,
+      height: window.innerHeight,
+      debug: true,
+    }, "scene1");
+
+    Prefab.define("MenuCamera", function() {
+      var camera = new Entity.Camera(
+        45, 
+        window.innerWidth / window.innerHeight,
+        0.1,
+        10000
+      ); 
+
+      var follow = new Follow();
+      follow.offset = new THREE.Vector3(0, 200, -1); //Fuck you, gimbal.
+
+      camera.addComponent(follow);
+      return camera;
+    });
+    var camera = Amoeba.addEntity("MenuCamera");
+
+    Prefab.define("ConfigMenu", function() {
+      var master = new Entity.Transform("ConfigMenu");
+
+      var inter = new Interface({
+        'sphere': {
+          target: master,
+          setup: function(el) {
+            $(document.createElement('button'))
+            .text('Sphere')
+            .addClass('sphere')
+            .css({
+              color: '#0000ff'
+            })
+            .appendTo($(el))
+            .click(function() {
+              Amoeba.addEntity("SphereProxy"); 
+            });
+          }
+        }
+      }, [50, 50]);
+
+      master.addComponent(inter);
+      return master;
+    });
+    var menu = Amoeba.addEntity("ConfigMenu");
+
+    Prefab.define("PlayerBase", function() {
+      var sphere = new Entity.Mesh(
+        "PlayerBase",
+        new THREE.SphereGeometry(),
+        new THREE.MeshLambertMaterial()
+      );
+      return sphere;
+    });
+    var base = Amoeba.addEntity("PlayerBase");
+    camera.getComponent('follow').target = base;
+
+    Prefab.define("Ground", function() {
+      var pln = new THREE.PlaneGeometry(1000, 1000, 20, 20)
+        , gma = new THREE.MeshLambertMaterial()
+        , gcd = new CANNON.Plane();
+
+      var ground = new Entity.Mesh("Ground", pln, gma);
+      var sbd = new Rigidbody(0, gcd);
+      sbd._body.quaternion.setFromAxisAngle(
+        new CANNON.Vec3(1, 0, 0), 
+        -Math.PI / 2
+      );
+
+      ground.addComponent(sbd);
+      return ground;
+    });
+    var ground = Amoeba.addEntity("Ground");
+
+    var vertices = _.filter(base.geometry.vertices, function(vert) {
+      return Math.abs(vert.y - 25) < 0.00001;
+    });
+    var eligible = [
+      [base, vertices]
+    ];
+    Prefab.define("SphereProxy", function() {
+      var sphere = new Entity.Mesh(
+        "SphereProxy",
+        new THREE.SphereGeometry(25),
+        new THREE.MeshLambertMaterial()
+      );
+
+      var projector = new THREE.Projector();
+      var controller = new Controller({
+        'pointer.move': function(x, y) {
+          var vec = new THREE.Vector3(
+            (x / window.innerWidth) * 2 - 1,
+            (y / window.innerHeight) * -2 + 1,
+            0.5
+          );
+          var ray = projector.pickingRay(vec, camera);
+          var tar = _.head(ray.intersectObject(ground)).point;
+          tar.add(new THREE.Vector3(0, 25, 0)); 
+
+          var selected = null;
+          _.each(eligible, function(el) {
+            var verts = _.sortBy(el[1], function(vert) {
+              return tar.distanceToSquared(vert);
+            });
+
+            var closest = _.head(verts)
+              , distance = closest.distanceToSquared(tar);
+
+            if (distance < 225) {
+              if (!selected) {
+                selected = closest;
+              } 
+
+              if (selected && distance < selected.distanceToSquared(tar)) {
+                selected = closest;
+              }
+            }
+          });
+
+          if (selected) {
+            this.snapped = true;
+            this.position = selected;
+          } else {
+            this.snapped = false;
+            this.position = tar;
+          }
+        },
+        'pointer.down': function(x, y) {
+          if (this.snapped) {
+            this.removeComponent("controller");
+          }
+        }
+      });
+      sphere.addComponent(controller);
+      return sphere;
+    });
+    
+    var light = new Entity.PointLight("Light", 0xff0000, 1, 1000);
+    light.position.set(0, 300, 0);
+    Amoeba.addEntity(light);
+
+    Amoeba.run();
+    
+	</script>
+</body>
+</html>
