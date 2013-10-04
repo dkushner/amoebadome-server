@@ -3,6 +3,7 @@ var express = require('express'),
     io = require('socket.io').listen(app),
     routes = require('./routes'); 
 
+var players = [];
 // Configuration
 
 app.configure(function() {
@@ -14,7 +15,7 @@ app.configure(function() {
   app.use(express.static(__dirname + '/public'));
 });
 
-app.configure('development', function() {
+app.configure('development', function() {https://github.com/alongubkin/xylose/blob/master/server/app.js
   app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
 });
 
@@ -41,10 +42,12 @@ app.get('/', routes.index);
 
 //var status = "All is well.";
 
+//var amoeba = 
+
 io.sockets.on('connection', function (socket) {
-  // io.sockets.emit('status', { status: status }); // note the use of io.sockets to emit but socket.on to listen
-  // socket.on('reset', function (data) {
-  //   status = "War is imminent!";
-  //   io.sockets.emit('status', { status: status });
-  // });
+//  io.sockets.emit('amoeba', { ameoeba: 'amoeba' }); // note the use of io.sockets to emit but socket.on to listen
+  //socket.on('reset', function (data) {
+    //status = "War is imminent!";
+    //io.sockets.emit('status', { status: status });
+  //});
 }); 
