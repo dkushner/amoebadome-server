@@ -1,27 +1,10 @@
-var express = require('express'),
-    app = express.createServer(express.logger()),
-    io = require('socket.io').listen(app),
-    routes = require('./routes'); 
+var port = process.env.PORT || 5000 
+  , express = require('express')
+  , io = require('socket.io')
+  , app = express.createServer();
 
-var players = [];
-// Configuration
 
-app.configure(function() {
-  app.set('views', __dirname + '/views');
-  app.set('view engine', 'ejs');
-  app.use(express.bodyParser());
-  app.use(express.methodOverride());
-  app.use(app.router);
-  app.use(express.static(__dirname + '/public'));
-});
-
-app.configure('development', function() {https://github.com/alongubkin/xylose/blob/master/server/app.js
-  app.use(express.errorHandler({ dumpExceptions: true, showStack: true }));
-});
-
-app.configure('production', function() {
-  app.use(express.errorHandler());
-});
+app.use(express.static(__dirname + '/public'));
 
 // Heroku won't actually allow us to use WebSockets
 // so we have to setup polling instead.
@@ -31,23 +14,14 @@ io.configure(function () {
   io.set("polling duration", 10);
 });
 
-// Routes
-
-var port = process.env.PORT || 5000; // Use the port that Heroku provides or default to 5000
 app.listen(port, function() {
-  console.log("Express server listening on port %d in %s mode", app.address().port, app.settings.env);
+  console.log(
+    "Express server listening on port %d in %s mode", 
+    app.address().port, 
+    process.env.NODE_ENV
+  );
 });
 
-app.get('/', routes.index);
-
-//var status = "All is well.";
-
-//var amoeba = 
-
 io.sockets.on('connection', function (socket) {
-//  io.sockets.emit('amoeba', { ameoeba: 'amoeba' }); // note the use of io.sockets to emit but socket.on to listen
-  //socket.on('reset', function (data) {
-    //status = "War is imminent!";
-    //io.sockets.emit('status', { status: status });
-  //});
+  console.log("HIII");
 }); 
