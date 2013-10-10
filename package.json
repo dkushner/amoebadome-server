@@ -1,13 +1,15 @@
 {
-    "name": "amoebadome-server",
-    "version": "0.0.1",
-    "private": true,
-    "dependencies": {
-      "express": "~2.5.8",
-      "ejs": "~0.7.1",
-      "socket.io": "~0.9.6"
-    },
-    "engines": {
+  "name": "amoebadome-server",
+  "version": "0.0.1",
+  "private": true,
+  "dependencies": {
+    "express": "~2.5.8",
+    "ejs": "~0.7.1",
+    "socket.io": "~0.9.6",
+    "underscore": "~1.5.2",
+    "node-uuid": "~1.4.1"
+  },
+  "engines": {
     "node": "0.6.x"
   }
 }
