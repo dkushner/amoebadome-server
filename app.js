@@ -1,14 +1,13 @@
 var port = process.env.PORT || 5000 
   , express = require('express')
   , socket = require('socket.io')
-  , app = express.createServer();
+  , uuid = require('node-uuid')
+  , app = express.createServer()
+  , _ = require('underscore');
 
 
 app.use(express.static(__dirname + '/public'));
 
-// Heroku won't actually allow us to use WebSockets
-// so we have to setup polling instead.
-// https://devcenter.heroku.com/articles/using-socket-io-with-node-js-on-heroku
 var io = socket.listen(app);
 io.configure(function () {
   io.set("transports", ["xhr-polling"]);
@@ -23,6 +22,34 @@ app.listen(port, function() {
   );
 });
 
-io.sockets.on('connection', function (socket) {
-  console.log("HIII");
+var clients = {};
+
+io.sockets.on('connection', function (client) {
+  client.uuid = uuid.v4();
+  clients[client.uuid] = {}; 
+  client.emit('client.accept', { uuid: client.uuid });
+
+  _.each(clients, function(el) {
+    _.each(el, function(agent) {
+      client.emit('agent.new', agent.uuid, agent.type, agent.data);
+    });
+  });
+  // Tell other clients to create this proxy.
+  client.on('agent.new', function(id, type, data) {
+    var remote = uuid.v4();
+    clients[client.uuid][id] = {
+      uuid: remote,
+      type: type,
+      data: data
+    };
+    client.broadcast.emit('agent.new', remote, type, data);
+  });
+
+  client.on('agent.tick', function(id, data) {
+    var agent = clients[client.uuid][id];
+    agent.data = data;
+
+    // Test!
+    client.broadcast.emit('agent.tick', agent.uuid, data);
+  });
 }); 
