@@ -12,6 +12,7 @@ var io = socket.listen(app);
 io.configure(function () {
   io.set("transports", ["xhr-polling"]);
   io.set("polling duration", 10);
+  io.set("log level", 2);
 });
 
 app.listen(port, function() {
@@ -28,21 +29,24 @@ io.sockets.on('connection', function (client) {
   client.uuid = uuid.v4();
   clients[client.uuid] = {}; 
   client.emit('client.accept', { uuid: client.uuid });
+  console.log("Registered Client: ", client.uuid);
 
   _.each(clients, function(el) {
     _.each(el, function(agent) {
-      client.emit('agent.new', agent.uuid, agent.type, agent.data);
+      client.emit('agent.create', agent.uuid, agent.type, agent.data);
     });
   });
+
   // Tell other clients to create this proxy.
-  client.on('agent.new', function(id, type, data) {
+  client.on('agent.create', function(id, type, data) {
     var remote = uuid.v4();
     clients[client.uuid][id] = {
       uuid: remote,
       type: type,
       data: data
     };
-    client.broadcast.emit('agent.new', remote, type, data);
+    client.broadcast.emit('agent.create', remote, type, data);
+    console.log("User ", client.uuid, "created agent ", remote);
   });
 
   client.on('agent.tick', function(id, data) {
@@ -51,5 +55,13 @@ io.sockets.on('connection', function (client) {
 
     // Test!
     client.broadcast.emit('agent.tick', agent.uuid, data);
+  });
+
+  client.on('disconnect', function() {
+    _.each(clients[client.uuid], function(agent) {
+      client.broadcast.emit('agent.destroy', agent.uuid);
+    });
+    delete clients[client.uuid];
+    console.log("Unregistered Client: ", client.uuid);
   });
 }); 
