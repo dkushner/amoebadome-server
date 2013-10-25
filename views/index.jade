@@ -1,0 +1,16 @@
+!!!5
+html
+  head
+    title Amoebadome: The Microbial Deathmatch!
+    script(data-main="js/app.js", src="vendor/require.js")
+  body
+    div(id="amoeba")
+      div(id="interface")
+    script(type="game/interface" name="Login").
+      <div class="login">
+        <form method="post" action="/login">
+          <input type="text" name="username"></input>
+          <input type="password" name="password"></input>
+          <input type="submit" name="Submit">Submit</input>
+        </form>
+      </div>

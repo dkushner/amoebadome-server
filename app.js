@@ -1,12 +1,35 @@
 var port = process.env.PORT || 5000 
   , express = require('express')
+  , stylus = require('stylus')
+  , nib = require('nib')
   , socket = require('socket.io')
   , uuid = require('node-uuid')
   , app = express.createServer()
   , _ = require('underscore');
 
 
+app.set('views', __dirname + '/views');
+app.set('view engine', 'jade');
+app.set('view options', {
+  layout: false,
+  pretty: true
+});
+
+app.use(stylus.middleware({
+  src: __dirname + '/views',
+  dest: __dirname + '/public',
+  compile: function(str, path) {
+    return stylus(str)
+    .set('filename', path)
+    .set('compress', true)
+    .use(nib());
+  }
+}));
 app.use(express.static(__dirname + '/public'));
+
+app.get('/', function(req, res) {
+  res.render('index');
+});
 
 var io = socket.listen(app);
 io.configure(function () {
@@ -22,7 +45,6 @@ app.listen(port, function() {
 });
 
 var clients = {};
-
 io.sockets.on('connection', function (client) {
   client.uuid = uuid.v4();
   clients[client.uuid] = {}; 
