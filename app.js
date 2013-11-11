@@ -31,10 +31,10 @@ app.get('/', function(req, res) {
   res.render('index');
 });
 
-var io = socket.listen(app);
+/*var io = socket.listen(app);
 io.configure(function () {
   io.set("log level", 2);
-});
+});*/
 
 app.listen(port, function() {
   console.log(
@@ -44,6 +44,7 @@ app.listen(port, function() {
   );
 });
 
+/*
 var clients = {};
 io.sockets.on('connection', function (client) {
   client.uuid = uuid.v4();
@@ -85,3 +86,4 @@ io.sockets.on('connection', function (client) {
     console.log("Unregistered Client: ", client.uuid);
   });
 }); 
+*/
