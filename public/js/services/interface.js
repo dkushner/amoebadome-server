@@ -6,7 +6,8 @@ var deps = [
 
 define(deps, function($, _, EventEmitter) {
   var listeners = [];
-  return _.extend({
+
+  var interface = _.extend({
     to: function(name, bind, handle) {
       // Clear previous screen's listeners.
       this.removeListeners('tick', listeners);
@@ -48,5 +49,13 @@ define(deps, function($, _, EventEmitter) {
       this.addListeners('tick', listeners);
     }
   }, EventEmitter.prototype);
+
+  var tick = function() {
+    interface.emitEvent('tick'); 
+    window.requestAnimationFrame(tick);
+  };
+  tick();
+
+  return interface;
 });
 

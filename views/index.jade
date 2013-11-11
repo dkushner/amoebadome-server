@@ -2,15 +2,19 @@
 html
   head
     title Amoebadome: The Microbial Deathmatch!
+    link(rel="stylesheet" type="text/css" href="css/main.css")
     script(data-main="js/app.js", src="vendor/require.js")
   body
     div(id="amoeba")
       div(id="interface")
-    script(type="game/interface" name="Login").
-      <div class="login">
-        <form method="post" action="/login">
-          <input type="text" name="username"></input>
-          <input type="password" name="password"></input>
-          <input type="submit" name="Submit">Submit</input>
-        </form>
+    script(type="game/interface", name="HUD").
+      <div data-bind="playerData" class="hud">
+        <div class="health-container">
+          <div class="health-bar" data-property="health as width" data-watch>
+            <h3 data-property="health" data-watch></h3>
+          </div>
+        </div>
+        <div class="point-counter">
+          <h3 data-property="points" data-watch></h3>
+        </div>
       </div>

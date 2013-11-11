@@ -8,7 +8,6 @@ var deps = [
 ];
 
 define(deps, function(_, $, THREE, Detector, EventEmitter, Entity) {
-  console.log(Entity);
   var entities = {}
     , prefabs = {}
     , scenes = {};
@@ -38,12 +37,12 @@ define(deps, function(_, $, THREE, Detector, EventEmitter, Entity) {
       this._scene = new THREE.Scene();
 
       this.emitEvent('initialized');
+      this.update();
       return this;
     },
     run: function(scene) {
       this.loadScene(scene);
       this.emitEvent('running');
-      this.update();
     },
     update: function(dt) {
       window.requestAnimationFrame(this.update.bind(this));
@@ -51,7 +50,9 @@ define(deps, function(_, $, THREE, Detector, EventEmitter, Entity) {
       this.render();
     },
     render: function() {
-      this._renderer.render(this._scene, Entity.Camera.main);
+      if (Entity.Camera.main) {
+        this._renderer.render(this._scene, Entity.Camera.main);
+      }
     },
     definePrefab: function(name, ctor) {
       prefabs[name] = ctor;
@@ -68,8 +69,8 @@ define(deps, function(_, $, THREE, Detector, EventEmitter, Entity) {
     loadScene: function(name) {
       this.active && this._scene.remove(active);
 
-      active = new THREE.Object3D();
-      this._scene.add(active);
+      this.active = new THREE.Object3D();
+      this._scene.add(this.active);
       scenes[name]();
     },
     addEntity: function(e) {
@@ -79,7 +80,7 @@ define(deps, function(_, $, THREE, Detector, EventEmitter, Entity) {
 
       var proc = function(el) {
         el.name = el.name || "Entity" + el.id;
-        entities[uuid] = el;
+        entities[el.uuid] = el;
         this.active.add(el);
 
         _.each(_.values(el.components), function(c) {
