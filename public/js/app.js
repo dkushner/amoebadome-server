@@ -96,24 +96,65 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     var follow = new Component.Follow();
     follow.offset = new THREE.Vector3(0, 200, -1);
 
+
+    var maxVeloc = 50;
+
     var control = new Component.Controller({
       'w': function() {
         var tar = this.getComponent("follow").target;
-        tar.getComponent("rigidbody")._body.force.z = 200;
+        if(tar.getComponent("rigidbody")._body.velocity.z < maxVeloc){
+          tar.getComponent("rigidbody")._body.velocity.z = tar.getComponent("rigidbody")._body.velocity.z + 5.0;
+          if(tar.getComponent("rigidbody")._body.velocity.z > maxVeloc){
+            tar.getComponent("rigidbody")._body.velocity.z = maxVeloc;
+          }
+        }
+        tar.getComponent("rigidbody")._body.velocity.x *= 0.9;
       },
       's': function() {
         var tar = this.getComponent("follow").target;
-        tar.getComponent("rigidbody")._body.force.z = -200;
+        if(Math.abs(tar.getComponent("rigidbody")._body.velocity.z) < maxVeloc){
+          tar.getComponent("rigidbody")._body.velocity.z = tar.getComponent("rigidbody")._body.velocity.z - 5.0;
+          if(Math.abs(tar.getComponent("rigidbody")._body.velocity.z) > maxVeloc){
+            tar.getComponent("rigidbody")._body.velocity.z = -maxVeloc;
+          }
+        }
+        tar.getComponent("rigidbody")._body.velocity.x *= 0.9;
       },
       'a': function() {
         var tar = this.getComponent("follow").target;
-        tar.getComponent("rigidbody")._body.force.x = 200;
+        if(Math.abs(tar.getComponent("rigidbody")._body.velocity.x) < maxVeloc){
+          tar.getComponent("rigidbody")._body.velocity.x = tar.getComponent("rigidbody")._body.velocity.x + 5.0;
+          if(Math.abs(tar.getComponent("rigidbody")._body.velocity.x) > maxVeloc){
+            tar.getComponent("rigidbody")._body.velocity.x = maxVeloc;
+          }
+        }
+        tar.getComponent("rigidbody")._body.velocity.z *= 0.9;
       },
       'd': function() {
         var tar = this.getComponent("follow").target;
-        tar.getComponent("rigidbody")._body.force.x = -200;
+        if(Math.abs(tar.getComponent("rigidbody")._body.velocity.x) < maxVeloc){
+          tar.getComponent("rigidbody")._body.velocity.x = tar.getComponent("rigidbody")._body.velocity.x - 5.0;
+          if(Math.abs(tar.getComponent("rigidbody")._body.velocity.x) > maxVeloc){
+            tar.getComponent("rigidbody")._body.velocity.x = -maxVeloc;
+          }
+        }
+        tar.getComponent("rigidbody")._body.velocity.z *= 0.9;
       },
       'q': function() {
+        // var tar = this.getComponent("follow").target;
+        // if(Math.abs(tar.getComponent("rigidbody")._body.velocity.x) < (maxVeloc)){
+        //   tar.getComponent("rigidbody")._body.velocity.x = tar.getComponent("rigidbody")._body.velocity.x + 5.0;
+        //   if(Math.abs(tar.getComponent("rigidbody")._body.velocity.x) > (maxVeloc)){
+        //     tar.getComponent("rigidbody")._body.velocity.x = (maxVeloc);
+        //   }
+        // }
+        // if(Math.abs(tar.getComponent("rigidbody")._body.velocity.z) < (maxVeloc)){
+        //   tar.getComponent("rigidbody")._body.velocity.z = tar.getComponent("rigidbody")._body.velocity.x + 5.0;
+        //   if(Math.abs(tar.getComponent("rigidbody")._body.velocity.z) > (maxVeloc)){
+        //     tar.getComponent("rigidbody")._body.velocity.z = (maxVeloc);
+        //   }
+        // }
+
         this.getComponent("follow").offset.add(new THREE.Vector3(0, 50, 0));
       },
       'e': function() {
@@ -158,6 +199,7 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     var player = new Entity.Mesh("Player", geometry, material);
     var rigidbody = new Component.Rigidbody(1, collider, physMaterial, { updateRotation: false });
     rigidbody._body.angularDamping = 1;
+    rigidbody._body.linearDamping = 0.9;
     player.addComponent(rigidbody);
 
     player.userData.slots = [{
