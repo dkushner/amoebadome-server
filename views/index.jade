@@ -4,6 +4,51 @@ html
     title Amoebadome: The Microbial Deathmatch!
     link(rel="stylesheet" type="text/css" href="css/main.css")
     script(data-main="js/app.js", src="vendor/require.js")
+    script(type="x-shader/x-vertex" id="movement-vertex").
+      #define M_PI 3.14159265358979
+
+      uniform float time;
+      uniform vec3 movement;
+      varying vec3 vNormal;
+      //varying goes to both shaders
+      //attribute is vertex shader
+      void main(){          
+          vNormal = normal;
+          
+          float speed = length(movement);
+          float influence = dot(normalize(position), movement / speed);
+          float bias = dot(normalize(position), vec3(1.0, 0.0, 0.0));
+          vec3 scaledMove = (movement / 2.0) * influence;
+
+          vec3 idleOffset = normal + (sin((time + bias) * 4.0));
+          idleOffset.x = 0.0;
+
+          vec3 moveOffset = scaledMove * (1.0 + sin((time + influence) * speed / 10.0));
+
+          vec3 newPos = position + mix(idleOffset, moveOffset, speed / 50.0);
+
+          gl_Position = projectionMatrix *
+                modelViewMatrix *
+                vec4(newPos, 1.0);
+      }
+    script(type="x-shader/x-fragment" id="movement-fragment").
+        varying vec3 vNormal;
+
+        void main(){
+          vec3 light = vec3(0.5,0.2,1.0);
+          float Dot = dot(normalize(cameraPosition),normalize(vNormal));
+          light = normalize(light);
+          float dProd = max(0.0, dot(vNormal, light));
+          float glow = 0.0;
+          if(Dot >= 0.0 && Dot <= 0.4){ //0.45 is original value used
+              glow = Dot; 
+          }
+          gl_FragColor = vec4(dProd+glow, // R
+                              dProd+glow, // G
+                              dProd+glow, // B
+                              0.5+glow);  // A
+ 
+        }
   body
     div(id="amoeba")
       div(id="interface")

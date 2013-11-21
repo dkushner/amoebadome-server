@@ -35,6 +35,7 @@ define(deps, function(_, $, THREE, Detector, EventEmitter, Entity) {
       this._renderer.setSize(this.config.width, this.config.height);
       $(this.config.canvas).append(this._renderer.domElement);
       this._scene = new THREE.Scene();
+      this._clock = new THREE.Clock();
 
       this.emitEvent('initialized');
       this.update();
@@ -46,7 +47,7 @@ define(deps, function(_, $, THREE, Detector, EventEmitter, Entity) {
     },
     update: function(dt) {
       window.requestAnimationFrame(this.update.bind(this));
-      this.emitEvent('tick', [dt]);
+      this.emitEvent('tick', [this._clock.getDelta()]);
       this.render();
     },
     render: function() {

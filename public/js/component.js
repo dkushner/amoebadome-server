@@ -42,7 +42,8 @@ define(deps, function(Physics, _, $) {
       ag[el[0].charCodeAt(0)] = _.bind(el[1], this);
       return ag;
     }, {}, owner);
-
+    
+     
     $(document).on('keypress', $.proxy(function(e) {
       this._actions[e.which] && this._actions[e.which](); 
     }, this));
@@ -125,25 +126,24 @@ define(deps, function(Physics, _, $) {
   };
 
   Component.Agent = function() {
-    window.setInterval(function() {
-      this._direction = new CANNON.Vec3(
-        Math.random(), 0, Math.random()
-      );
-      this._direction = this._direction.mult(Math.random() * 10);
-    }.bind(this), 10000);
+    this.trigger = new CANNON.RigidBody(1, new CANNON.Sphere(20));
+    this.trigger.collisionFilterGroup = 2;
+    this.trigger.collisionFilterMask = 1;
+    this.trigger.collisionResponse = false;
 
-    this._direction = new CANNON.Vec3(
-      Math.random(), 0, Math.random()
-    );
-    this._direction = this._direction.mult(5);
+    this.trigger.addEventListener('collide', function(e) {
+      var target = e.with.owner;
 
+      if (!target.userData) return;
+
+      var threat = attachCount + target.userData.stats + target.userData.stats
+    });
     Component.call(this, "agent"); 
   };
   Component.Agent.prototype = Object.create(Component.prototype);
   Component.Agent.prototype.constructor = Component.Agent;
   
   Component.Agent.prototype.update = function() {
-    this._owner.getComponent('rigidbody')._body.velocity = this._direction; 
   };
 
   return Component;

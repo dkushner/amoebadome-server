@@ -68,8 +68,23 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
   });
 
   /**
-   * Prefab definitions.
+   * Shared Resource Setup
    */
+  var moveUniforms = {
+    movement: { type: 'v3', value: new THREE.Vector3(0, 0, 0) },
+    time: { type: 'f', value: 1.0 }
+  };
+
+  var moveMaterial = new THREE.ShaderMaterial({
+    uniforms: moveUniforms,
+    vertexShader: $('#movement-vertex').text(),
+    fragmentShader: $('#movement-fragment').text()
+  });
+
+  var stageUniforms = {
+    time: { type: 'f', value: 0.0 }
+  };
+
   var physMaterial = new CANNON.Material("GroundMaterial");
   var contactMaterial = new CANNON.ContactMaterial(
     physMaterial,
@@ -77,12 +92,10 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     0.0,
     0.3
   );
-
   contactMaterial.contactEquationStiffness = 1e8;
   contactMaterial.contactEquationRegularizationTime = 3;
   contactMaterial.frictionEquationStiffness = 1e8;
   contactMaterial.frictionEquationRegularizationTime = 3;
-
   Physics.addContactMaterial(contactMaterial);
 
   Game.definePrefab("PlayerCamera", function() {
@@ -151,13 +164,23 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     return ground;
 	})
   .definePrefab("Player", function() {
-    var geometry = new THREE.SphereGeometry(10)
-      , material = new THREE.MeshNormalMaterial()
+    var geometry = new THREE.SphereGeometry(10, 20, 20)
+      , material = moveMaterial
       , collider = new CANNON.Box(new CANNON.Vec3(10, 10, 10));
 
     var player = new Entity.Mesh("Player", geometry, material);
     var rigidbody = new Component.Rigidbody(1, collider, physMaterial, { updateRotation: false });
     rigidbody._body.angularDamping = 1;
+    rigidbody._body.collisionFilterGroup = 1;
+    Game.on('tick', function(dt) {
+      var velocity = rigidbody._body.velocity;
+      moveUniforms.movement.value = new THREE.Vector3(velocity.x, velocity.y, velocity.z);
+      moveUniforms.time.value += dt;
+    });
+
+    window.setInterval(function() {
+      console.log(rigidbody._body.velocity);
+    }, 3000);
     player.addComponent(rigidbody);
 
     player.userData.slots = [{
@@ -176,6 +199,12 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
 
     player.userData.healthValue = 100;
     player.userData.points = 999;
+    player.userData.stats = {
+      size: 10,
+      attack: 0,
+      defense: 100,
+      speed: 50
+    };
     
     Object.defineProperty(player.userData, 'health', {
       get: function() {
@@ -193,7 +222,6 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
 
       slot.occupied = true;
       slot.occupant = attachment;
-
       
       var bodyA = attachment.getComponent('rigidbody')._body
         , bodyB = this.getComponent('rigidbody')._body;
@@ -208,7 +236,6 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
       attachment.lookAt(slot.position);
       attachment.position = slot.position;
     };
-
     return player;
   })
   .definePrefab("Enemy", function() {
