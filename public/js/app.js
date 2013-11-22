@@ -92,10 +92,12 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     0.0,
     0.3
   );
+
   contactMaterial.contactEquationStiffness = 1e8;
   contactMaterial.contactEquationRegularizationTime = 3;
   contactMaterial.frictionEquationStiffness = 1e8;
   contactMaterial.frictionEquationRegularizationTime = 3;
+
   Physics.addContactMaterial(contactMaterial);
 
   Game.definePrefab("PlayerCamera", function() {
@@ -109,22 +111,49 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     var follow = new Component.Follow();
     follow.offset = new THREE.Vector3(0, 200, -1);
 
+
+    var maxVeloc = 50;
+
     var control = new Component.Controller({
       'w': function() {
         var tar = this.getComponent("follow").target;
-        tar.getComponent("rigidbody")._body.force.z = 200;
+        if(tar.getComponent("rigidbody")._body.velocity.z < maxVeloc){
+          tar.getComponent("rigidbody")._body.velocity.z = tar.getComponent("rigidbody")._body.velocity.z + 5.0;
+          if(tar.getComponent("rigidbody")._body.velocity.z > maxVeloc){
+            tar.getComponent("rigidbody")._body.velocity.z = maxVeloc;
+          }
+        }
+        tar.getComponent("rigidbody")._body.velocity.x *= 0.9;
       },
       's': function() {
         var tar = this.getComponent("follow").target;
-        tar.getComponent("rigidbody")._body.force.z = -200;
+        if(Math.abs(tar.getComponent("rigidbody")._body.velocity.z) < maxVeloc){
+          tar.getComponent("rigidbody")._body.velocity.z = tar.getComponent("rigidbody")._body.velocity.z - 5.0;
+          if(Math.abs(tar.getComponent("rigidbody")._body.velocity.z) > maxVeloc){
+            tar.getComponent("rigidbody")._body.velocity.z = -maxVeloc;
+          }
+        }
+        tar.getComponent("rigidbody")._body.velocity.x *= 0.9;
       },
       'a': function() {
         var tar = this.getComponent("follow").target;
-        tar.getComponent("rigidbody")._body.force.x = 200;
+        if(Math.abs(tar.getComponent("rigidbody")._body.velocity.x) < maxVeloc){
+          tar.getComponent("rigidbody")._body.velocity.x = tar.getComponent("rigidbody")._body.velocity.x + 5.0;
+          if(Math.abs(tar.getComponent("rigidbody")._body.velocity.x) > maxVeloc){
+            tar.getComponent("rigidbody")._body.velocity.x = maxVeloc;
+          }
+        }
+        tar.getComponent("rigidbody")._body.velocity.z *= 0.9;
       },
       'd': function() {
         var tar = this.getComponent("follow").target;
-        tar.getComponent("rigidbody")._body.force.x = -200;
+        if(Math.abs(tar.getComponent("rigidbody")._body.velocity.x) < maxVeloc){
+          tar.getComponent("rigidbody")._body.velocity.x = tar.getComponent("rigidbody")._body.velocity.x - 5.0;
+          if(Math.abs(tar.getComponent("rigidbody")._body.velocity.x) > maxVeloc){
+            tar.getComponent("rigidbody")._body.velocity.x = -maxVeloc;
+          }
+        }
+        tar.getComponent("rigidbody")._body.velocity.z *= 0.9;
       },
       'q': function() {
         this.getComponent("follow").offset.add(new THREE.Vector3(0, 50, 0));
@@ -171,6 +200,7 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     var player = new Entity.Mesh("Player", geometry, material);
     var rigidbody = new Component.Rigidbody(1, collider, physMaterial, { updateRotation: false });
     rigidbody._body.angularDamping = 1;
+	rigidbody._body.linearDamping = 0.9;
     rigidbody._body.collisionFilterGroup = 1;
     Game.on('tick', function(dt) {
       var velocity = rigidbody._body.velocity;
