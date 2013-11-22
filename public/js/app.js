@@ -71,6 +71,7 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
    * Shared Resource Setup
    */
   var moveUniforms = {
+    viewVector: { type: 'v3', value: new THREE.Vector3(0, 0, 0) },
     movement: { type: 'v3', value: new THREE.Vector3(0, 0, 0) },
     time: { type: 'f', value: 1.0 }
   };
@@ -78,12 +79,11 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
   var moveMaterial = new THREE.ShaderMaterial({
     uniforms: moveUniforms,
     vertexShader: $('#movement-vertex').text(),
-    fragmentShader: $('#movement-fragment').text()
+    fragmentShader: $('#movement-fragment').text(),
+    side: THREE.FrontSide,
+    blending: THREE.AdditiveBlending,
+    transparent: true
   });
-
-  var stageUniforms = {
-    time: { type: 'f', value: 0.0 }
-  };
 
   var physMaterial = new CANNON.Material("GroundMaterial");
   var contactMaterial = new CANNON.ContactMaterial(
@@ -111,50 +111,7 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     var follow = new Component.Follow();
     follow.offset = new THREE.Vector3(0, 200, -1);
 
-
-    var maxVeloc = 50;
-
     var control = new Component.Controller({
-      'w': function() {
-        var tar = this.getComponent("follow").target;
-        if(tar.getComponent("rigidbody")._body.velocity.z < maxVeloc){
-          tar.getComponent("rigidbody")._body.velocity.z = tar.getComponent("rigidbody")._body.velocity.z + 5.0;
-          if(tar.getComponent("rigidbody")._body.velocity.z > maxVeloc){
-            tar.getComponent("rigidbody")._body.velocity.z = maxVeloc;
-          }
-        }
-        tar.getComponent("rigidbody")._body.velocity.x *= 0.9;
-      },
-      's': function() {
-        var tar = this.getComponent("follow").target;
-        if(Math.abs(tar.getComponent("rigidbody")._body.velocity.z) < maxVeloc){
-          tar.getComponent("rigidbody")._body.velocity.z = tar.getComponent("rigidbody")._body.velocity.z - 5.0;
-          if(Math.abs(tar.getComponent("rigidbody")._body.velocity.z) > maxVeloc){
-            tar.getComponent("rigidbody")._body.velocity.z = -maxVeloc;
-          }
-        }
-        tar.getComponent("rigidbody")._body.velocity.x *= 0.9;
-      },
-      'a': function() {
-        var tar = this.getComponent("follow").target;
-        if(Math.abs(tar.getComponent("rigidbody")._body.velocity.x) < maxVeloc){
-          tar.getComponent("rigidbody")._body.velocity.x = tar.getComponent("rigidbody")._body.velocity.x + 5.0;
-          if(Math.abs(tar.getComponent("rigidbody")._body.velocity.x) > maxVeloc){
-            tar.getComponent("rigidbody")._body.velocity.x = maxVeloc;
-          }
-        }
-        tar.getComponent("rigidbody")._body.velocity.z *= 0.9;
-      },
-      'd': function() {
-        var tar = this.getComponent("follow").target;
-        if(Math.abs(tar.getComponent("rigidbody")._body.velocity.x) < maxVeloc){
-          tar.getComponent("rigidbody")._body.velocity.x = tar.getComponent("rigidbody")._body.velocity.x - 5.0;
-          if(Math.abs(tar.getComponent("rigidbody")._body.velocity.x) > maxVeloc){
-            tar.getComponent("rigidbody")._body.velocity.x = -maxVeloc;
-          }
-        }
-        tar.getComponent("rigidbody")._body.velocity.z *= 0.9;
-      },
       'q': function() {
         this.getComponent("follow").offset.add(new THREE.Vector3(0, 50, 0));
       },
@@ -162,6 +119,7 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
         this.getComponent("follow").offset.add(new THREE.Vector3(0, -50, 0));
       }
     });
+
     camera.addComponent(control);
     camera.addComponent(follow);
     return camera;
@@ -199,20 +157,66 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
 
     var player = new Entity.Mesh("Player", geometry, material);
     var rigidbody = new Component.Rigidbody(1, collider, physMaterial, { updateRotation: false });
+
     rigidbody._body.angularDamping = 1;
-	rigidbody._body.linearDamping = 0.9;
+    rigidbody._body.linearDamping = 0.3;
     rigidbody._body.collisionFilterGroup = 1;
+
     Game.on('tick', function(dt) {
       var velocity = rigidbody._body.velocity;
       moveUniforms.movement.value = new THREE.Vector3(velocity.x, velocity.y, velocity.z);
       moveUniforms.time.value += dt;
+      moveUniforms.viewVector.value = new THREE.Vector3().subVectors(Entity.Camera.main.position, player.position);
     });
 
-    window.setInterval(function() {
-      console.log(rigidbody._body.velocity);
-    }, 3000);
-    player.addComponent(rigidbody);
+    var activeRotation = 0;
+    var activeTranslation = 0;
+    var lastVelocity = 0;
+    var maxVelocity = 50;
+    var heading = new CANNON.Vec3(1.0, 0.0, 0.0);
+    var bearing = new CANNON.Quaternion();
 
+    Game.on('tick', function(dt) {
+      lastVelocity = Math.min(Math.max(lastVelocity + 0.1 * activeTranslation, -maxVelocity), maxVelocity);
+      bearing.setFromAxisAngle(new CANNON.Vec3(0.0, 1.0, 0.0), activeRotation / 50);
+      bearing.vmult(heading, heading);
+      heading.mult(lastVelocity, rigidbody._body.velocity);
+    });
+
+    $(document).keydown(function(e) {
+      switch(e.keyCode) {
+        case 65: 
+          activeRotation = 1;
+          break;
+        case 68:
+          activeRotation = -1;
+          break;
+        case 87:
+          activeTranslation = 1;
+          break;
+        case 83:
+          activeTranslation = -1;
+          break;
+        default:
+          break;
+      }
+    });
+    $(document).keyup(function(e) {
+      switch(e.keyCode) {
+        case 65:
+        case 68:
+          activeRotation = 0;
+          break;
+        case 87:
+        case 83:
+          activeTranslation = 0;
+          break;
+        default:
+          break;
+      }
+    });
+
+    player.addComponent(rigidbody);
     player.userData.slots = [{
       position: new THREE.Vector3(0, 0, 20),
       occupied: null,
@@ -236,6 +240,8 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
       speed: 50
     };
     
+    // Health accessor to transform the raw health value to
+    // CSS-friendly percentage.
     Object.defineProperty(player.userData, 'health', {
       get: function() {
         return this.healthValue.toString() + '%';
