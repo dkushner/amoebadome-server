@@ -124,6 +124,10 @@ define(deps, function(Physics, _, $) {
     Component.prototype.setOwner.call(this, owner); 
     tick();
   };
+  Component.Rigidbody.prototype.destroy = function() {
+    console.log("DESTROYED");
+    Physics.removeBody(this._body);
+  };
 
   Component.Agent = function() {
     this.trigger = new CANNON.RigidBody(1, new CANNON.Sphere(20));

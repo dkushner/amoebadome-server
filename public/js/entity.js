@@ -59,6 +59,20 @@ define(['three/Three', 'underscore'], function(THREE, _) {
   Entity.Mesh.prototype = Object.create(THREE.Mesh.prototype);
   Entity.Mesh.prototype.constructor = Entity.Mesh;
 
+  Entity.ParticleSystem = function(name) {
+    var args;
+    (typeof name === "string") ?
+      args = Array.prototype.slice.call(arguments, 1) :
+      args = Array.prototype.slice.call(arguments);
+
+    THREE.ParticleSystem.apply(this, args);
+
+    _.extend(this, Entity.prototype);
+    Entity.call(this, name);
+  };
+  Entity.ParticleSystem.prototype = Object.create(THREE.ParticleSystem.prototype);
+  Entity.ParticleSystem.prototype.constructor = Entity.ParticleSystem;
+
   Entity.AmbientLight = function(name) {
     var args;
     (typeof name === "string") ?
