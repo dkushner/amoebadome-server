@@ -331,6 +331,15 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     rigidbody._body.angularDamping = 1;
     rigidbody._body.linearDamping = 0.3;
 
+    rigidbody._body.addEventListener('collide', _.throttle(function(e) { //Damage Player Event
+      var entity = e.with.owner;
+      if (entity.name == "Player") {
+        console.log(entity);
+        //Check for Endospore attachment
+        rigidbody._body.owner.kill(20,entity); //better way to do this?
+      }
+    }, 3000, { trailing: false }));
+
     var deltaRot = new CANNON.Quaternion()
       , heading = new CANNON.Vec3(1.0, 0.0, 0.0);
 
@@ -359,6 +368,10 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
         Game.addEntity(font);
         Game.removeEntity(enemy);
       }
+    };
+
+    enemy.kill = function(d,target) {
+      target.userData.healthValue -= d;
     };
 
     enemy.patrol = function(center, radius) {
@@ -497,11 +510,66 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     mesh.addComponent(control);
     return mesh; 
   })
+  .definePrefab("Plasma",function(){    
+
+    var geometry = new THREE.Geometry()
+      , material = new THREE.MeshBasicMaterial()
+      , plasma = new Entity.Mesh("Plasma", geometry, material);
+
+    var control = new Component.Controller({
+      'p' : function(){
+
+        var player = plasma.parent.getComponent('rigidbody')._body;
+        var created =  0;
+        var maxCreated = 30;
+        var quat = new CANNON.Quaternion();
+        quat.setFromAxisAngle(new CANNON.Vec3(-1,0,0), 90 * Math.PI/180);
+        var lastPos = new THREE.Vector3(player.position.x,1,player.position.z);
+
+        var timerID = setInterval(function(){
+          if(Math.abs(player.position.x - lastPos.x) % 100 > 10 || Math.abs(player.position.z - lastPos.z) % 100 > 10){
+            created += 1;
+            lastPos.x = player.position.x;
+            lastPos.z = player.position.z;
+            
+            var geometry = new THREE.PlaneGeometry(10,10)
+            , material = new THREE.MeshNormalMaterial()
+            , collider = new CANNON.Box(new CANNON.Vec3(5,5,5))
+            , rigidbody = new Component.Rigidbody(0,collider)
+            , plane = new Entity.Mesh("PlasmaPlane",geometry, material);
+            plane.addComponent(rigidbody);
+            plane.getComponent('rigidbody')._body.collisionResponse = false;
+            rigidbody._body.addEventListener('collide', _.throttle(function(e){
+                console.log("Collision Works");
+                //ADD 'SLOW' HERE TO ENEMIES
+            }));
+
+            rigidbody._body.quaternion = quat;
+            plane.addComponent(rigidbody);
+            
+            Game.addEntity(plane);
+            plane.getComponent('rigidbody')._body.position = new CANNON.Vec3(player.position.x-5,10, player.position.z- 5);
+            if(created == maxCreated){
+              clearInterval(timerID);
+            }
+
+            var destroy = setTimeout(function(){
+              Physics.removeBody(plane.getComponent('rigidbody')._body);
+              Game.removeEntity(plane);
+            },3000);
+          }
+        },500);
+      }
+    });
+    plasma.addComponent(control);
+    return plasma;    
+  })
   .definePrefab("Endospore", function() {
     var torus = new THREE.TorusGeometry(15, 3, 8, 20)
       , material = new THREE.MeshBasicMaterial({ color: 0x0000ff })
       , endospore = new Entity.Mesh("Endospore", torus, material);
-    
+
+
     return endospore;
   });
 
@@ -521,6 +589,14 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     var grapple = Game.createPrefab("Grapple");
     Game.addEntity(grapple);
     player.addAttachment(grapple);
+
+    var plasma = Game.createPrefab("Plasma");
+    Game.addEntity(plasma);
+    player.addAttachment(plasma);
+
+    var endospore = Game.createPrefab("Endospore");
+    Game.addEntity(endospore)
+    player.addAttachment(endospore);
 
     /* Create the game camera. */
     var camera = Game.createPrefab("PlayerCamera");
