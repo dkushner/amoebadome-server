@@ -149,19 +149,8 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     return camera;
   })
 	.definePrefab("Ground", function() {
-		var geometry = new THREE.PlaneGeometry(1000, 1000, 20, 20)
-      , material = new THREE.MeshBasicMaterial({ color: 0x333366 })
-      , plane = new CANNON.Plane();
-
-    for(var i = 0; i < geometry.vertices.length; i++) {
-      geometry.vertices[i].add(new THREE.Vector3(
-        0,
-        Math.random() * 5,
-        0
-      ));
-    }
-
-    var ground = new Entity.Mesh("Ground", geometry, material);
+    var plane = new CANNON.Plane();
+    var ground = new Entity.Transform("Ground");
     var rigidbody = new Component.Rigidbody(0, plane, physMaterial);
 
     rigidbody._body.quaternion.setFromAxisAngle(
@@ -511,54 +500,63 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     return mesh; 
   })
   .definePrefab("Plasma",function(){    
+    var plasma = new Entity.Transform("Plasma");
+    var plasmaPool = [];
+    var fixQuat = new CANNON.Quaternion();
+    fixQuat.setFromAxisAngle(new CANNON.Vec3(-1, 0, 0), 90 * Math.PI / 180);
+    
+    for (var i = 0; i < 30; i++) {
+      var geometry = new THREE.PlaneGeometry(10, 10)
+        , material = new THREE.MeshBasicMaterial({ color: 0xffffff })
+        , collider = new CANNON.Box(new CANNON.Vec3(5, 5, 5))
+        , rigidbody = new Component.Rigidbody(0, collider)
+        , mesh = new Entity.Mesh("PlasmaPlane", geometry, material);
 
-    var geometry = new THREE.Geometry()
-      , material = new THREE.MeshBasicMaterial()
-      , plasma = new Entity.Mesh("Plasma", geometry, material);
+      fixQuat.copy(rigidbody._body.quaternion);
+      rigidbody._body.position.set(9999, 9999, 9999);
+      rigidbody._body.collisionResponse = false;
+      rigidbody._body.addEventListener('collide', _.throttle(function(e) {
+        if (e.with.owner.name == "Enemy") {
+          e.with.linearDamping = 0.8;
+          console.log(e.with);
+          setTimeout(function() {
+            e.with.linearDamping = 0.3; 
+          }, 3000);
+        }
+      }, 1000));
+      mesh.addComponent(rigidbody);
+      Game.addEntity(mesh);
+      plasmaPool.push(mesh);
+    }
 
     var control = new Component.Controller({
       'p' : function(){
+        var playerBody = plasma.parent.getComponent('rigidbody')._body;
 
-        var player = plasma.parent.getComponent('rigidbody')._body;
-        var created =  0;
-        var maxCreated = 30;
-        var quat = new CANNON.Quaternion();
-        quat.setFromAxisAngle(new CANNON.Vec3(-1,0,0), 90 * Math.PI/180);
-        var lastPos = new THREE.Vector3(player.position.x,1,player.position.z);
+        var lastPos = new CANNON.Vec3()
+          , thisPos = new CANNON.Vec3();
 
-        var timerID = setInterval(function(){
-          if(Math.abs(player.position.x - lastPos.x) % 100 > 10 || Math.abs(player.position.z - lastPos.z) % 100 > 10){
-            created += 1;
-            lastPos.x = player.position.x;
-            lastPos.z = player.position.z;
+        var timerId = setInterval(function() {
+          playerBody.position.copy(thisPos);
+          if(thisPos.vsub(lastPos).norm2() > 100){
+            var plane = plasmaPool.pop();
+            plane.getComponent('rigidbody')._body.position.set(
+              playerBody.position.x,
+              10,
+              playerBody.position.z
+            );
+            plasmaPool.unshift(plane);
             
-            var geometry = new THREE.PlaneGeometry(10,10)
-            , material = new THREE.MeshNormalMaterial()
-            , collider = new CANNON.Box(new CANNON.Vec3(5,5,5))
-            , rigidbody = new Component.Rigidbody(0,collider)
-            , plane = new Entity.Mesh("PlasmaPlane",geometry, material);
-            plane.addComponent(rigidbody);
-            plane.getComponent('rigidbody')._body.collisionResponse = false;
-            rigidbody._body.addEventListener('collide', _.throttle(function(e){
-                console.log("Collision Works");
-                //ADD 'SLOW' HERE TO ENEMIES
-            }));
-
-            rigidbody._body.quaternion = quat;
-            plane.addComponent(rigidbody);
-            
-            Game.addEntity(plane);
-            plane.getComponent('rigidbody')._body.position = new CANNON.Vec3(player.position.x-5,10, player.position.z- 5);
-            if(created == maxCreated){
-              clearInterval(timerID);
-            }
-
-            var destroy = setTimeout(function(){
-              Physics.removeBody(plane.getComponent('rigidbody')._body);
-              Game.removeEntity(plane);
+            setTimeout(function(){
+              plane.getComponent('rigidbody')._body.position.set(9999, 9999, 9999);
             },3000);
           }
+          thisPos.copy(lastPos);
         },500);
+
+        setTimeout(function() {
+          clearInterval(timerId);
+        }, 10000);
       }
     });
     plasma.addComponent(control);
@@ -568,7 +566,6 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     var torus = new THREE.TorusGeometry(15, 3, 8, 20)
       , material = new THREE.MeshBasicMaterial({ color: 0x0000ff })
       , endospore = new Entity.Mesh("Endospore", torus, material);
-
 
     return endospore;
   });

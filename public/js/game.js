@@ -50,7 +50,7 @@ define(deps, function(_, $, THREE, Detector, EventEmitter, Entity) {
           antialias: true,
           alpha: true
         });
-        this._renderer.setClearColor(0xBBBBBB, 1);
+        this._renderer.setClearColor(0x333366, 1);
       } else {
         this._renderer = new THREE.CanvasRenderer();
       }
