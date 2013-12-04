@@ -43,7 +43,7 @@ define(deps, function($, _, EventEmitter) {
         $(this).find("[data-click]")
         .each(function() {
           var event = $(this).attr('data-click');
-          $(this).click(bind[label], handle[event]);
+          $(this).click(bind[label][event]);
         });
       });
       this.addListeners('tick', listeners);

@@ -2,7 +2,8 @@
 html
   head
     title Amoebadome: The Microbial Deathmatch!
-    link(rel="stylesheet" type="text/css" href="css/main.css")
+    link(rel="stylesheet", type="text/css", href="css/main.css")
+    link(rel="stylesheet", type="text/css", href="css/stylesheet.css")
     script(data-main="js/app.js", src="vendor/require.js")
     script(type="x-shader/x-vertex" id="enemy-vertex").
       #define M_PI 3.14159265358979
@@ -77,8 +78,8 @@ html
           gl_FragColor = vec4(glow, 1.0);
         }
   body
+    div(id="interface")
     div(id="amoeba")
-      div(id="interface")
     script(type="game/interface", name="HUD").
       <div data-bind="playerData" class="hud">
         <div class="health-container">
@@ -91,4 +92,47 @@ html
             <img src="/images/dna-icon-ov.png">
           </div>
         </div>
+      </div>
+    script(type="game/interface", name="Level").
+      <div class="container">
+        <div data-bind="configData" class="level">
+          <div class="attachments">
+            <h1>Level Up!</h1>
+              <button data-click="selectEndospore">
+                <h3>Endospore</h3>
+              </button>
+              <button data-click="selectPilus">
+                <h3>Pilus</h3>
+              </button>
+              <button data-click="selectMito">
+                <h3>Mitochondrion</h3>
+              </button>
+              <button data-click="selectAntibody">
+                <h3>Antibody</h3>
+              </button>
+          </div>
+          <div class="slots">
+            <article>
+              <button class="north" data-click="north"></button>
+              <button class="north-east" data-click="northEast"></button>
+              <button class="east" data-click="east"></button>
+              <button class="south-east" data-click="southEast"></button>
+              <button class="south" data-click="south"></button>
+              <button class="south-west" data-click="southWest"></button>
+              <button class="west" data-click="west"></button>
+              <button class="north-west" data-click="northWest"></button>
+            </article>
+          </div>
+        </div>
+      </div>
+    script(type="game/interface", name="Intro").
+      <div class="intro" data-bind="introData">
+        <div class="box">
+          <h1>AMOEBADOME</h1>
+          <button data-click="play">PLAY</button>
+        </div>
+      </div>
+    script(type="game/interface", name="End").
+      <div class="end">
+        <h1>GAME OVER</h1>
       </div>

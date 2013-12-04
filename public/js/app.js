@@ -171,12 +171,6 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
 
     rigidbody._body.angularDamping = 1;
     rigidbody._body.linearDamping = 0.3;
-    rigidbody._body.addEventListener('collide', _.throttle(function(e) {
-      var entity = e.with.owner;
-      if (entity.name == "Enemy") {
-        entity.damage(5, player);
-      }
-    }, 3000, { trailing: false }));
 
     material.uniforms.color.value = new THREE.Color(0x00ff00);
     Game.on('tick', function(dt) {
@@ -236,15 +230,27 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     player.addComponent(rigidbody);
     player.userData.slots = [{
       position: new THREE.Vector3(0, 0, 12),
-      occupied: null,
-    }, { 
-      position: new THREE.Vector3(12, 0, 0),
       occupied: null
     }, {
+      position: new THREE.Vector3(-8.5, 0, 8.5),
+      occupied: null
+    }, { 
       position: new THREE.Vector3(-12, 0, 0),
       occupied: null
     }, {
+      position: new THREE.Vector3(-8.5, 0, -8.5),
+      occupied: null
+    }, {
       position: new THREE.Vector3(0, 0, -12),
+      occupied: null
+    }, {
+      position: new THREE.Vector3(8.5, 0, -8.5), 
+      occupied: null
+    }, {
+      position: new THREE.Vector3(12, 0, 0),
+      occupied: null
+    }, {
+      position: new THREE.Vector3(8.5, 0, 8.5),
       occupied: null
     }];
 
@@ -258,7 +264,7 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     // CSS-friendly percentage.
     Object.defineProperty(player.userData, 'health', {
       get: function() {
-        return this.healthValue.toString() + '%';
+        return this.healthValue.toFixed(1).toString() + '%';
       },
       enumerable: true
     });
@@ -269,21 +275,144 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
       }
     });
 
+    player.damage = function(d, source) {
+      var endospores = _.filter(this.userData.slots, function(slot) {
+        if (slot.occupied) {
+          return slot.occupant.name == "Endospore";
+        }
+        return false;
+      });
+      console.log(endospores);
+      this.userData.healthValue -= (d - (d * 0.1 * endospores.length));
+      
+      // Flash to indicate damage has been done.
+      this.material.uniforms.color.value = new THREE.Color(0xffffff);
+      window.setTimeout(function() {
+        player.material.uniforms.color.value = new THREE.Color(0x00ff00);
+      }, 50);
+
+      // Check for death.
+      if (this.userData.healthValue <= 0) {
+        Interface.to("End");
+      }
+    };
+
     player.addExperience = function(exp) {
       this.userData.pointsValue += exp;
       
       var level = Math.floor(Math.log(this.userData.pointsValue));
       if (level > this.userData.currentLevel) {
         this.userData.currentLevel = level;
-        // Present the upgrade menu.
+        this.userData.selected = "";
+
+        Interface.to("Level", {
+          configData: {
+            selectEndospore: function() {
+              player.userData.selected = "Endospore";
+            },
+            selectPilus: function() {
+              player.userData.selected = "Pilus";
+            },
+            selectMito: function() {
+              player.userData.selected = "Mitochondrion";
+            },
+            selectAntibody: function() {
+              player.userData.selected = "Antibody";
+            },
+            north: function() {
+              if (player.userData.selected) {
+                var attach = Game.createPrefab(player.userData.selected, 0);
+                Game.addEntity(attach);
+                player.addAttachment(attach);
+                Interface.to("HUD", {
+                  playerData: player.userData
+                });
+              }
+            },
+            northEast: function() {
+              if (player.userData.selected) {
+                var attach = Game.createPrefab(player.userData.selected, 1);
+                Game.addEntity(attach);
+                player.addAttachment(attach);
+                Interface.to("HUD", {
+                  playerData: player.userData
+                });
+              }
+            },
+            east: function() {
+              if (player.userData.selected) {
+                var attach = Game.createPrefab(player.userData.selected, 2);
+                Game.addEntity(attach);
+                player.addAttachment(attach);
+                Interface.to("HUD", {
+                  playerData: player.userData
+                });
+              }
+            },
+            southEast: function() {
+              if (player.userData.selected) {
+                var attach = Game.createPrefab(player.userData.selected, 3);
+                Game.addEntity(attach);
+                player.addAttachment(attach);
+                Interface.to("HUD", {
+                  playerData: player.userData
+                });
+              }
+            },
+            south: function() {
+              if (player.userData.selected) {
+                var attach = Game.createPrefab(player.userData.selected, 4);
+                Game.addEntity(attach);
+                player.addAttachment(attach);
+                Interface.to("HUD", {
+                  playerData: player.userData
+                });
+              }
+            },
+            southWest: function() {
+              if (player.userData.selected) {
+                var attach = Game.createPrefab(player.userData.selected, 5);
+                Game.addEntity(attach);
+                player.addAttachment(attach);
+                Interface.to("HUD", {
+                  playerData: player.userData
+                });
+              }
+            },
+            west: function() {
+              if (player.userData.selected) {
+                var attach = Game.createPrefab(player.userData.selected, 6);
+                Game.addEntity(attach);
+                player.addAttachment(attach);
+                Interface.to("HUD", {
+                  playerData: player.userData
+                });
+              }
+            },
+            northWest: function() {
+              if (player.userData.selected) {
+                var attach = Game.createPrefab(player.userData.selected, 7);
+                Game.addEntity(attach);
+                player.addAttachment(attach);
+                Interface.to("HUD", {
+                  playerData: player.userData
+                });
+              }
+            }
+          }
+        });
       }
       this.userData.levelProgress = 100 * this.userData.pointsValue / (Math.exp(this.userData.currentLevel + 1));
     };
 
-    player.addAttachment = function(attachment) {
-      var slot = _.find(this.userData.slots, function(el) {
-        return !el.occupied;
-      });
+    player.addAttachment = function(attachment, slot) {
+      if (slot === undefined) {
+        slot = _.find(this.userData.slots, function(el) {
+          return !el.occupied;
+        })
+      } else {
+        slot = player.userData.slots[slot];
+      }
 
       if (slot === undefined) return;
 
@@ -303,8 +432,12 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
       
       attachment.fixture = player;
       player.add(attachment);
-      attachment.lookAt(slot.position);
-      attachment.position = slot.position;
+      if (attachment.name == "Endospore") {
+        attachment.position = new THREE.Vector3();
+      } else { 
+        attachment.lookAt(slot.position);
+        attachment.position = slot.position;
+      }
     };
     return player;
   })
@@ -320,12 +453,10 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     rigidbody._body.angularDamping = 1;
     rigidbody._body.linearDamping = 0.3;
 
-    rigidbody._body.addEventListener('collide', _.throttle(function(e) { //Damage Player Event
+    rigidbody._body.addEventListener('collide', _.throttle(function(e) { 
       var entity = e.with.owner;
       if (entity.name == "Player") {
-        console.log(entity);
-        //Check for Endospore attachment
-        rigidbody._body.owner.kill(20,entity); //better way to do this?
+        entity.damage(10, enemy); 
       }
     }, 3000, { trailing: false }));
 
@@ -359,33 +490,32 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
       }
     };
 
-    enemy.kill = function(d,target) {
-      target.userData.healthValue -= d;
-    };
-
     enemy.patrol = function(center, radius) {
-      rigidbody._body.position = new CANNON.Vec3(center.x, center.y, center.z);
-      
+      rigidbody._body.position = new CANNON.Vec3(center.x, 10, center.z);
       window.setInterval(function() {
         var target = center.clone().add(new THREE.Vector3(
           ((Math.random() * 2) - 1) * radius,
-          0,
+          10,
           ((Math.random() * 2) - 1) * radius
         ));
-        rigidbody._body.velocity = target.multiplyScalar(1 / 3); 
-      }, 3000);
-
+        target.multiplyScalar(1 / 10); 
+        rigidbody._body.velocity = new CANNON.Vec3(
+          target.x,
+          target.y,
+          target.z
+        );
+      }, 10000);
     };
 
     enemy.addComponent(rigidbody);
     return enemy; 
   })
-  .definePrefab("Spike", function() {
+  .definePrefab("Antibody", function() {
     var geometry = new THREE.CylinderGeometry(0, 5, 50)
       , material = new THREE.MeshBasicMaterial(0x3333dd)
       , collider = new CANNON.Cylinder(0, 5, 10, 8);
 
-    var spike = new Entity.Mesh("Spike", geometry, material);
+    var spike = new Entity.Mesh("Antibody", geometry, material);
     var rigidbody = new Component.Rigidbody(0, collider);
 
     spike.addComponent(rigidbody);
@@ -453,14 +583,14 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     }, 1000);
     return mito;
   })
-  .definePrefab("Grapple", function() {
+  .definePrefab("Pilus", function() {
     var createConstraints = function(b1, b2, d) {
       
     };
 
     var geometry = new THREE.CubeGeometry(2, 2, 2, 1, 1)
       , material = new THREE.MeshBasicMaterial({ color: 0x0000ff })
-      , mesh = new Entity.Mesh("Grapple", geometry, material)
+      , mesh = new Entity.Mesh("Pilus", geometry, material)
       , raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(), 20, 100);
 
     var control = new Component.Controller({
@@ -518,7 +648,7 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
       rigidbody._body.addEventListener('collide', _.throttle(function(e) {
         if (e.with.owner.name == "Enemy") {
           e.with.linearDamping = 0.8;
-          console.log(e.with);
+          e.with.owner.damage(2, plasma.parent);
           setTimeout(function() {
             e.with.linearDamping = 0.3; 
           }, 3000);
@@ -549,7 +679,7 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
             
             setTimeout(function(){
               plane.getComponent('rigidbody')._body.position.set(9999, 9999, 9999);
-            },3000);
+            },10000);
           }
           thisPos.copy(lastPos);
         },500);
@@ -564,7 +694,11 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
   })
   .definePrefab("Endospore", function() {
     var torus = new THREE.TorusGeometry(15, 3, 8, 20)
-      , material = new THREE.MeshBasicMaterial({ color: 0x0000ff })
+      , material = new THREE.MeshBasicMaterial({ 
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.5
+      })
       , endospore = new Entity.Mesh("Endospore", torus, material);
 
     return endospore;
@@ -583,10 +717,6 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     player.getComponent('rigidbody')._body.position = new CANNON.Vec3(0, 10, 0);
     Game.addEntity(player);
 
-    var grapple = Game.createPrefab("Grapple");
-    Game.addEntity(grapple);
-    player.addAttachment(grapple);
-
     var plasma = Game.createPrefab("Plasma");
     Game.addEntity(plasma);
     player.addAttachment(plasma);
@@ -594,6 +724,7 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     var endospore = Game.createPrefab("Endospore");
     Game.addEntity(endospore)
     player.addAttachment(endospore);
+    endospore.rotateOnAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2);
 
     /* Create the game camera. */
     var camera = Game.createPrefab("PlayerCamera");
@@ -602,21 +733,24 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
 
     /* Set up test enemies. */
     for (var i = 0; i < 15; i++) {
-      var position = new CANNON.Vec3(
-        ((Math.random() * 2) - 1) * 500,
+      var position = new THREE.Vector3(
+        ((Math.random() * 2) - 1) * 300,
         20,
-        ((Math.random() * 2) - 1) * 500 
+        ((Math.random() * 2) - 1) * 300 
       );
       var enemy = Game.createPrefab("Enemy");
-      enemy.getComponent('rigidbody')._body.position = position;
+      enemy.patrol(position, 200);
       Game.addEntity(enemy);
     }
-    var enemy = Game.createPrefab("Enemy");
-    enemy.getComponent('rigidbody')._body.position = new CANNON.Vec3(20, 30, 0);
-    Game.addEntity(enemy);
 
-    Interface.to("HUD", {
-      playerData: player.userData
+    Interface.to("Intro", {
+      introData: {
+        play: function() {
+          Interface.to("HUD", {
+            playerData: player.userData
+          });
+        }
+      }
     });
   });
 

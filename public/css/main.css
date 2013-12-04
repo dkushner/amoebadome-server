@@ -1,10 +1,12 @@
 
 /* Amoebadome Styling */
+html, 
 body {
+  width: 100%;
+  height: 100%;
 	overflow	: hidden;
 	padding		: 0;
 	margin		: 0;
-
 	color		: #222;
 	background-color: #BBB;
 	font-family	: arial;
@@ -13,16 +15,13 @@ body {
 
 h3 {
   margin: 0px;
-  color: #dd3333;
 }
 
 #interface {
   position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
   height: 100%;
-  z-index: 999;
+  z-index: 99;
 }
 
 .health-container {
@@ -31,6 +30,10 @@ h3 {
   border: 2px solid #dd3333;
   margin: 10px;
   float: left;
+}
+
+.health-container h3 {
+  color: #dd3333;
 }
 
 .health-bar {
@@ -61,4 +64,176 @@ h3 {
 
 .hud {
   height: 100%;
+}
+
+.container {
+  position: relative;
+  width: 800px;
+  margin: 0 auto;
+  height: 100%;
+}
+
+.level {
+  position: absolute;
+  width: 800px;
+  height: 500px;
+  top: 50%;
+  margin-top: -250px;
+  background: none;
+}
+
+.level h1 {
+  font-family: 'spilt_inkregular';
+  text-align: center;
+  font-size: 60px;
+  color: #66ff66;
+  margin-top: -25px;
+}
+
+.level div {
+  width: 60%;
+  height: 100%;
+  float: left;
+  background-color: rgba(64, 128, 64, 0.5);
+}
+
+.level div+div {
+  width: 40%;
+  float: right;
+}
+
+.attachments {
+  text-align: center; 
+}
+
+.level button {
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  padding: 0;
+  border: 0;
+  outline: none;
+}
+
+.level button:hover {
+  background-color: #cccccc;
+}
+
+.level button:focus {
+  background-color: #66ff66;
+}
+
+.level button:focus h3 {
+  font-size: 20px;
+  color: #ccffcc;
+}
+
+.slots article {
+  position: relative;
+  margin: 0 auto;
+  margin-top: 160px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background-color: #66ff66;
+}
+
+.slots article button {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  outline: 0;
+  border: none;
+  border-radius: 50%;
+}
+
+.north {
+  top: 0;
+  left: 50%;
+  margin-left: -10px;
+  margin-top: -10px;
+}
+
+.north-east {
+  top: 10%;
+  right: 10%;
+}
+
+.east {
+  top: 50%;
+  right: 0;
+  margin-top: -10px;
+  margin-right: -10px;
+}
+
+.south-east {
+  bottom: 10%;
+  right: 10%;
+}
+
+.south {
+  bottom: 0;
+  left: 50%;
+  margin-left: -10px;
+  margin-bottom: -10px;
+}
+
+.south-west {
+  bottom: 10%;
+  left: 10%;
+}
+
+.west {
+  left: 0;
+  top: 50%;
+  margin-top: -10px;
+  margin-left: -10px;
+}
+
+.north-west {
+  left: 10%;
+  top: 10%;
+}
+
+.intro,
+.end {
+  width: 100%;
+  height: 100%;
+  background-image: url('../images/menu-bg.jpg');
+  background-repeat: repeat;
+  text-align: center;
+}
+
+.end h1 {
+  margin: 45% 0 0 0;
+  font-size: 64px;
+  color: #66ff66; 
+}
+
+.intro h1 {
+  margin: 0;
+  font-size: 128px;
+  font-family: 'spilt_inkregular';
+  text-shadow: 0px 1px 15px #000;
+  color: #66ff66; 
+}
+
+.intro button {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background-color: #66ff66;
+  border: none;
+  font-size: 34px;
+  font-style: bold;
+  font-weight: 800;
+  box-shadow: 0px 0px 15px 1px #000;
+}
+
+.intro .box {
+  width: 100%;
+  position: absolute;
+  top: 50%;
+  margin-top: -120px;
 }
