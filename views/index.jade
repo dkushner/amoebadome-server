@@ -5,6 +5,19 @@ html
     link(rel="stylesheet", type="text/css", href="css/main.css")
     link(rel="stylesheet", type="text/css", href="css/stylesheet.css")
     script(data-main="js/app.js", src="vendor/require.js")
+    
+    script(type="x-shader/x-vertex" id="plasma-vertex").
+      uniform float time;
+      varying vec3 vNormal;
+
+      void main(){
+        vNormal = normal;
+        vec3 Why = vec3 (1,0,0);
+        float Dot = abs(dot(normalize(position),normalize(Why))) + 0.01;
+        vec3 newPosition = position + normal * sin(time/Dot) * 4.0;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);   
+      }
+
     script(type="x-shader/x-vertex" id="enemy-vertex").
       #define M_PI 3.14159265358979
 
@@ -77,6 +90,12 @@ html
           glow += color * 0.1;
           gl_FragColor = vec4(glow, 1.0);
         }
+
+    script(type="x-shader/x-fragment" id="plasma-fragment").
+     void main(){
+        gl_FragColor = vec4(0.0,1.0,0.0,0.5); 
+      }
+
   body
     div(id="interface")
     div(id="amoeba")

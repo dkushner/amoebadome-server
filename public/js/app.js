@@ -14,9 +14,9 @@ requirejs.config({
   },
   shim: {
     'underscore': {
-    	deps: ['underscore.deep'],
+      deps: ['underscore.deep'],
       init: function(definition) {
-      	_.mixin(definition);
+        _.mixin(definition);
       },
       exports: '_'
     },
@@ -79,11 +79,24 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
   /**
    * Shared Resource Setup
    */
+
+  var plasmaUniforms = {
+          time : { type : 'f', value : 0 }
+  };  
+
   var moveUniforms = {
     color: { type: 'c', value: new THREE.Color(0xffffff) },
     movement: { type: 'f', value: 0 },
     time: { type: 'f', value: 1.0 }
   };
+
+  var plasmaMaterial = new THREE.ShaderMaterial({
+      uniforms : plasmaUniforms,
+      vertexShader : $('#plasma-vertex').text(),
+      fragmentShader : $('#plasma-fragment').text(),
+      side: THREE.FrontSide,
+      transparent : true
+  });
 
   var moveMaterial = new THREE.ShaderMaterial({
     uniforms: moveUniforms,
@@ -125,7 +138,7 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
   Physics.addContactMaterial(contactMaterial);
 
   Game.definePrefab("PlayerCamera", function() {
-  	var camera = new Entity.Camera(
+    var camera = new Entity.Camera(
       45,
       window.innerWidth / window.innerHeight,
       0.1,
@@ -148,7 +161,7 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     camera.addComponent(follow);
     return camera;
   })
-	.definePrefab("Ground", function() {
+  .definePrefab("Ground", function() {
     var plane = new CANNON.Plane();
     var ground = new Entity.Transform("Ground");
     var rigidbody = new Component.Rigidbody(0, plane, physMaterial);
@@ -160,7 +173,7 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
 
     ground.addComponent(rigidbody);
     return ground;
-	})
+  })
   .definePrefab("Player", function() {
     var geometry = new THREE.SphereGeometry(10, 20, 20)
       , material = moveMaterial.clone()
@@ -413,25 +426,28 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
       } else {
         slot = player.userData.slots[slot];
       }
-
+ 
       if (slot === undefined) return;
-
+ 
       slot.occupied = true;
       slot.occupant = attachment;
       
       if (attachment.getComponent('rigidbody')) {
         var bodyA = attachment.getComponent('rigidbody')._body
           , bodyB = this.getComponent('rigidbody')._body;
-
         var constraint = new CANNON.PointToPointConstraint(
           bodyA, new CANNON.Vec3(),
           bodyB, new CANNON.Vec3(slot.position.x, slot.position.y, slot.position.z)
         );
         Physics.addConstraint(constraint);
+        Game.addEntity(attachment);
       } 
+      else{
+        player.add(attachment);
+      }
       
       attachment.fixture = player;
-      player.add(attachment);
+      //player.add(attachment);
       if (attachment.name == "Endospore") {
         attachment.position = new THREE.Vector3();
       } else { 
@@ -511,13 +527,40 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     return enemy; 
   })
   .definePrefab("Antibody", function() {
-    var geometry = new THREE.CylinderGeometry(0, 5, 50)
+    var geometry = new THREE.CylinderGeometry(0,3, 10)
       , material = new THREE.MeshBasicMaterial(0x3333dd)
-      , collider = new CANNON.Cylinder(0, 5, 10, 8);
-
+      , collider = new CANNON.Box(new CANNON.Vec3(0.5,0.5,0.5));
+ 
+    var player = _.filter(Game.entities, function(entity) {
+        return entity.name == "Player";
+      });
+ 
     var spike = new Entity.Mesh("Antibody", geometry, material);
-    var rigidbody = new Component.Rigidbody(0, collider);
+    var rigidbody = new Component.Rigidbody(0.1, collider);
+    var timerID = setInterval( function() {
+      var position = rigidbody._body.position;
+      var playerPosition = player[0].getComponent('rigidbody')._body.position;
+      var rotate = new CANNON.Quaternion();
+      var temp = new CANNON.Quaternion();
 
+      rotate.setFromAxisAngle(new CANNON.Vec3(1,0,0),90*Math.PI/180);
+      //Get rotation
+      var v = new CANNON.Vec3(spike.position.x - player[0].position.x, spike.position.y - player[0].position.y, spike.position.z - player[0].position.z);
+      var u = new CANNON.Vec3(-1,0,0);
+      v.normalize();
+      var Dot = u.dot(v);
+      var theta = Math.acos(Dot);
+      theta = theta*180/Math.PI;
+      if(spike.position.z < player[0].position.z){
+        theta *= -1;
+      }
+      temp.setFromAxisAngle(new CANNON.Vec3(0,1,0),(theta-90)*Math.PI/180);
+      var last = temp.mult(rotate);
+      last.copy(rigidbody._body.quaternion);  
+      rigidbody._body.angularDamping = 1;
+
+    },100);
+ 
     spike.addComponent(rigidbody);
     return spike;
   })
@@ -636,8 +679,8 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     fixQuat.setFromAxisAngle(new CANNON.Vec3(-1, 0, 0), 90 * Math.PI / 180);
     
     for (var i = 0; i < 30; i++) {
-      var geometry = new THREE.PlaneGeometry(10, 10)
-        , material = new THREE.MeshBasicMaterial({ color: 0xffffff })
+      var geometry = new THREE.PlaneGeometry(10, 10,5,6)
+        , material = plasmaMaterial.clone()
         , collider = new CANNON.Box(new CANNON.Vec3(5, 5, 5))
         , rigidbody = new Component.Rigidbody(0, collider)
         , mesh = new Entity.Mesh("PlasmaPlane", geometry, material);
@@ -658,6 +701,11 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
       Game.addEntity(mesh);
       plasmaPool.push(mesh);
     }
+
+   Game.on('tick', function(dt) {
+      material.uniforms.time.value = (material.uniforms.time.value > 30) ? dt :
+      material.uniforms.time.value += dt;
+    });
 
     var control = new Component.Controller({
       'p' : function(){
@@ -707,7 +755,7 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
   /**
   * Scene definitions. 
   */
-	Game.defineScene("Stage", function() {
+  Game.defineScene("Stage", function() {
     /* Set up the stage ground plane. */
     var ground = Game.createPrefab("Ground");   
     Game.addEntity(ground);
