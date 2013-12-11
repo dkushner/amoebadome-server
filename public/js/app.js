@@ -527,9 +527,9 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     return enemy; 
   })
   .definePrefab("Antibody", function() {
-    var geometry = new THREE.CylinderGeometry(0,3, 10)
-      , material = new THREE.MeshBasicMaterial(0x3333dd)
-      , collider = new CANNON.Box(new CANNON.Vec3(0.5,0.5,0.5));
+    var geometry = new THREE.CylinderGeometry(0,3, 15)
+      , material = new THREE.MeshBasicMaterial({ color: 0x00FF00, transparent: true})
+      , collider = new CANNON.Box(new CANNON.Vec3(1,1,1));
  
     var player = _.filter(Game.entities, function(entity) {
         return entity.name == "Player";
@@ -537,6 +537,7 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
  
     var spike = new Entity.Mesh("Antibody", geometry, material);
     var rigidbody = new Component.Rigidbody(0.1, collider);
+    rigidbody._body.collisionResponse = false;
     var timerID = setInterval( function() {
       var position = rigidbody._body.position;
       var playerPosition = player[0].getComponent('rigidbody')._body.position;
@@ -560,6 +561,13 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
       rigidbody._body.angularDamping = 1;
 
     },100);
+
+    rigidbody._body.addEventListener('collide', _.throttle(function(e) {
+        if (e.with.owner.name == "Enemy") {
+          console.log(player);
+          e.with.owner.damage(1, player[0]);
+        }
+      }, 1000));
  
     spike.addComponent(rigidbody);
     return spike;
@@ -741,14 +749,28 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     return plasma;    
   })
   .definePrefab("Endospore", function() {
-    var torus = new THREE.TorusGeometry(15, 3, 8, 20)
+    var torus = new THREE.TorusGeometry(15, 1, 8, 20)
       , material = new THREE.MeshBasicMaterial({ 
-          color: 0xffffff,
           transparent: true,
           opacity: 0.5
       })
       , endospore = new Entity.Mesh("Endospore", torus, material);
+      endospore.rotateOnAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2);
 
+      var time = 0;
+      Game.on('tick', function(dt) {
+        if(time < 2){
+          endospore.material.color.setHex( 0x00FF66 );
+          time += dt;
+        }
+        else if(time >= 2.001 && time < 4){
+          endospore.material.color.setHex( 0x00FF00);
+          time += dt;
+        }
+        else{
+          time = 0;
+        }
+    });
     return endospore;
   });
 
@@ -772,8 +794,11 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     var endospore = Game.createPrefab("Endospore");
     Game.addEntity(endospore)
     player.addAttachment(endospore);
-    endospore.rotateOnAxis(new THREE.Vector3(1, 0, 0), Math.PI / 2);
 
+    var antibody = Game.createPrefab("Antibody");
+    Game.addEntity(antibody);
+    player.addAttachment(antibody);
+    
     /* Create the game camera. */
     var camera = Game.createPrefab("PlayerCamera");
     camera.getComponent('follow').target = player;
