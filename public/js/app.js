@@ -455,6 +455,19 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
         attachment.position = slot.position;
       }
     };
+
+    var cheats = new Component.Controller({
+      'c' : function (){
+        _.each(player.userData.slots , function(el){
+          if(el.occupied == null){
+            var antibody = Game.createPrefab("Antibody");
+            Game.addEntity(antibody);
+            player.addAttachment(antibody);
+          }
+        }); 
+      }
+    });
+    player.addComponent(cheats);
     return player;
   })
   .definePrefab("Enemy", function() {
@@ -790,10 +803,6 @@ requirejs(deps, function(Game, Entity, Component, Interface, Physics, EventEmitt
     var plasma = Game.createPrefab("Plasma");
     Game.addEntity(plasma);
     player.addAttachment(plasma);
-
-    var endospore = Game.createPrefab("Endospore");
-    Game.addEntity(endospore)
-    player.addAttachment(endospore);
 
     var antibody = Game.createPrefab("Antibody");
     Game.addEntity(antibody);
